@@ -27,6 +27,7 @@ branches:
           - context: auto-review
           - context: commitlint
           - context: dependabot-dedupe
+          - context: firebase
           - context: format
           - context: lint
           - context: spelling

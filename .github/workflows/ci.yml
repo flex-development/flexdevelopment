@@ -12,6 +12,7 @@
 # - https://docs.github.com/webhooks-and-events/webhooks/webhook-events-and-payloads#pull_request
 # - https://docs.github.com/webhooks-and-events/webhooks/webhook-events-and-payloads#push
 # - https://docs.github.com/webhooks-and-events/webhooks/webhook-events-and-payloads#workflow_dispatch
+# - https://github.com/FirebaseExtended/action-hosting-deploy
 # - https://github.com/actions/cache
 # - https://github.com/actions/cache/discussions/650
 # - https://github.com/actions/checkout
@@ -204,9 +205,41 @@ jobs:
           root: ${{ github.workspace }}
           treat_flagged_words_as_errors: true
           verbose: true
+  firebase:
+    needs:
+      - commitlint
+      - format
+      - lint
+      - preflight
+      - spelling
+    permissions:
+      checks: write
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    environment:
+      name: firebase
+    steps:
+      - id: checkout
+        name: Checkout ${{ env.REF_NAME }}
+        uses: actions/checkout@v6.0.2
+        with:
+          persist-credentials: false
+          ref: ${{ env.REF }}
+      - id: deploy
+        name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0.10.0
+        with:
+          channelId: ${{ env.SHA }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FLEXDEVELOPMENTLLC }}
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+      - id: url
+        name: Print preview channel URL
+        run: echo ${{ steps.deploy.outputs.details_url }}
   artifacts:
     needs:
       - commitlint
+      - firebase
       - format
       - lint
       - preflight
