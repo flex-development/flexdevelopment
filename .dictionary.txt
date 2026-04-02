@@ -10,5 +10,6 @@ kaisugi
 nvmrc
 shfmt
 vates
+vercel
 vitest
 yarnrc

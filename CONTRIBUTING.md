@@ -345,7 +345,7 @@ e.g:
 
   <!--
    3. [`deploy`](.github/workflows/deploy.yml)
-      - deploy to firebase
+      - deploy to vercel
   -->
 
 [commitlint]: https://github.com/conventional-changelog/commitlint

@@ -27,14 +27,14 @@ branches:
           - context: auto-review
           - context: commitlint
           - context: dependabot-dedupe
-          - context: firebase
           - context: format
           - context: lint
           - context: spelling
+          - context: vercel
         strict: true
       restrictions: null
 environments:
-  - environment_name: firebase
+  - environment_name: preview
   - environment_name: release
 labels:
   - name: flag:breaking-change

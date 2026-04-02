@@ -12,7 +12,6 @@
 # - https://docs.github.com/webhooks-and-events/webhooks/webhook-events-and-payloads#pull_request
 # - https://docs.github.com/webhooks-and-events/webhooks/webhook-events-and-payloads#push
 # - https://docs.github.com/webhooks-and-events/webhooks/webhook-events-and-payloads#workflow_dispatch
-# - https://github.com/FirebaseExtended/action-hosting-deploy
 # - https://github.com/actions/cache
 # - https://github.com/actions/cache/discussions/650
 # - https://github.com/actions/checkout
@@ -25,6 +24,9 @@
 # - https://github.com/flex-development/manver-action
 # - https://github.com/hmarr/debug-action
 # - https://github.com/streetsidesoftware/cspell-action
+# - https://vercel.com/docs/cli/build
+# - https://vercel.com/docs/cli/deploy
+# - https://vercel.com/docs/cli/pull
 # - https://yarnpkg.com/cli/pack
 
 ---
@@ -205,41 +207,9 @@ jobs:
           root: ${{ github.workspace }}
           treat_flagged_words_as_errors: true
           verbose: true
-  firebase:
-    needs:
-      - commitlint
-      - format
-      - lint
-      - preflight
-      - spelling
-    permissions:
-      checks: write
-      contents: read
-      pull-requests: write
-    runs-on: ubuntu-latest
-    environment:
-      name: firebase
-    steps:
-      - id: checkout
-        name: Checkout ${{ env.REF_NAME }}
-        uses: actions/checkout@v6.0.2
-        with:
-          persist-credentials: false
-          ref: ${{ env.REF }}
-      - id: deploy
-        name: Deploy to Firebase Hosting
-        uses: FirebaseExtended/action-hosting-deploy@v0.10.0
-        with:
-          channelId: ${{ env.SHA }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FLEXDEVELOPMENTLLC }}
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-      - id: url
-        name: Print preview channel URL
-        run: echo ${{ steps.deploy.outputs.details_url }}
   artifacts:
     needs:
       - commitlint
-      - firebase
       - format
       - lint
       - preflight
@@ -287,3 +257,49 @@ jobs:
         with:
           name: ${{ steps.tarball.outputs.result }}
           path: ${{ steps.tarball.outputs.result }}
+  vercel:
+    needs:
+      - artifacts
+      - commitlint
+      - format
+      - lint
+      - preflight
+      - spelling
+    runs-on: ubuntu-latest
+    environment: preview
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - id: checkout
+        name: Checkout ${{ env.REF_NAME }}
+        uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ env.REF }}
+      - id: node
+        name: Setup Node.js
+        uses: actions/setup-node@v6.3.0
+        with:
+          cache: yarn
+          cache-dependency-path: yarn.lock
+          node-version-file: .nvmrc
+      - id: cache
+        name: Restore dependencies cache
+        uses: actions/cache@v5.0.4
+        with:
+          key: ${{ needs.preflight.outputs.cache-key }}
+          path: ${{ env.CACHE_PATH }}
+      - id: local-binaries
+        name: Add local binaries to $PATH
+        run: echo "$GITHUB_WORKSPACE/node_modules/.bin" >> $GITHUB_PATH
+      - id: env
+        name: Pull environment
+        run: vercel pull --environment=preview --yes --token=${{ secrets.VERCEL_TOKEN }}
+      - id: build
+        name: Build site
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+      - id: deploy
+        name: Deploy site preview
+        run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
