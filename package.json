@@ -71,7 +71,7 @@
     "trash-cli": "7.2.0",
     "typescript": "6.0.2",
     "unified": "11.0.5",
-    "vercel": "50.38.2",
+    "vercel": "50.39.0",
     "vfile": "6.0.3"
   },
   "packageManager": "yarn@4.12.0",
